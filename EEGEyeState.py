@@ -1,9 +1,10 @@
-# Generated from: EEGEyeState.ipynb
-# Converted at: 2026-04-25T13:03:42.126Z
-# Next step (optional): refactor into modules & generate tests with RunCell
-# Quick start: pip install runcell
-
-pip install shap
+"""
+EEG Eye-State Classification
+Random Forest + SHAP Interpretability | LSTM on Raw EEG
+Dataset: UCI EEG Eye State
+Author: Gary Zhen
+Date: 2026
+"""
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 from scipy.stats import skew, kurtosis
 import shap
+
+torch.manual_seed(42)
+np.random.seed(42)
+
+# ── Random Forest Pipeline ──────────────────────────
 
 data, meta = arff.loadarff("EEG Eye State.arff")
 df = pd.DataFrame(data)
@@ -125,61 +131,9 @@ explainer = shap.TreeExplainer(clf_full)
 shap_values = explainer.shap_values(X_scaled)
 shap.summary_plot(shap_values[:, :, 1], X_scaled, feature_names = feature_names)
 
-def extract_ratio_features(raw_windows):
-    bins = np.fft.rfft(raw_windows, axis = 1)
-    power = np.abs(bins)**2
-    alpha = power[:, 8:13, :]
-    beta = power[:, 13:31, :]
-    alpha_mean = np.mean(alpha, axis = 1)
-    beta_mean = np.mean(beta, axis = 1)
-    ratio = alpha_mean / (beta_mean + 1e-10)
-    log_ratio = np.log1p(ratio)
-    return log_ratio
+# ── LSTM Pipeline ───────────────────────────────────
 
-import numpy as np
-import pandas as pd
-import torch
-from torch.utils.data import Dataset, DataLoader
-import torch.nn as nn
-from sklearn.preprocessing import StandardScaler
-from scipy.io import arff
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
-from scipy.stats import skew, kurtosis
-
-torch.manual_seed(42)
-np.random.seed(42)
-
-data, meta = arff.loadarff("EEG Eye State.arff")
-df = pd.DataFrame(data)
-df["eyeDetection"] = df["eyeDetection"].astype(int)
-
-X_raw = df.iloc[:, :-1].values
-y_raw = df.iloc[:, -1].values
-
-window_size = 128
-stride = 32
-
-def create_windows(data, labels, window_size = 128, stride = 32):
-    X, y = [], []
-    for start in range(0, len(data) - window_size + 1, stride):
-        window = data[start : start + window_size]
-        window_mean = np.mean(window, axis = 0)
-        window_centered = window - window_mean
-        X.append(window_centered)
-        label_window = labels[start : start + window_size]
-        y.append(np.bincount(label_window.astype(int)).argmax())
-    return np.array(X), np.array(y)
-
-X_win, y_win = create_windows(X_raw, y_raw)
-
-def reject_artifacts(X_win, y_win, threshold = 150):
-    mask = np.max(np.abs(X_win), axis = (1,2)) < threshold
-    return X_win[mask], y_win[mask]
-
-X_win, y_win = reject_artifacts(X_win, y_win)
-
+# Reset for LSTM evaluation
 auc_scores = []
 K = 5
 fold_size = len(X_win) // K
