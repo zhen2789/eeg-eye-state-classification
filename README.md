@@ -49,3 +49,5 @@ EEGEyeState.py
 
 ## Paper
 Full research paper included in this repository as EEG_Paper.pdf
+
+![SHAP Summary](shap_summary.png)
