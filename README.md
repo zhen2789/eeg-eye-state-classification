@@ -26,7 +26,7 @@ rhythm suppression — suggesting consumer-grade EEG hardware cannot
 reliably capture the alpha-blocking phenomenon with sufficient SNR.
 
 ## Transformer Experiment
-A 4-layer transformer with 64-dimensional embeddings was trained on 
+A 3-layer transformer with 64-dimensional embeddings was trained on 
 raw EEG windows of shape (batch, 128, 14) using an AdamW optimizer 
 with weight decay 1e-2 and a learning rate of 1e-4. The model also utilized RoPE positional encoding and 
 patience-based early stopping. It trained with 5-fold blocked cross-validation, 
