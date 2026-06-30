@@ -1,7 +1,10 @@
-# Generated from: eeg-transformer-fixed.ipynb
-# Converted at: 2026-06-30T13:41:12.714Z
-# Next step (optional): refactor into modules & generate tests with RunCell
-# Quick start: pip install runcell
+"""
+EEG Eye-State Classification
+Transformer Architecture on Raw EEG (Windowed)
+Dataset: UCI EEG Eye State
+Author: Gary Zhen
+Date: June 2026
+"""
 
 import numpy as np
 import pandas as pd
