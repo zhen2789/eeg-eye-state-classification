@@ -200,8 +200,6 @@ class Model(nn.Module):
 model = Model()
 m = model.to(device)
 
-optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate, weight_decay=1e-2)
-
 # Blocked Cross-Validation
 
 K = 5
