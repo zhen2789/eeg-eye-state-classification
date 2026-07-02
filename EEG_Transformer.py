@@ -1,7 +1,10 @@
-# Generated from: eeg-transformer.ipynb
-# Converted at: 2026-07-02T22:44:02.224Z
-# Next step (optional): refactor into modules & generate tests with RunCell
-# Quick start: pip install runcell
+"""
+EEG Eye-State Classification
+Transformer Architecture on Raw EEG (Windowed)
+Dataset: UCI EEG Eye State
+Author: Gary Zhen
+Date: July 2026
+"""
 
 import numpy as np
 import pandas as pd
@@ -31,8 +34,8 @@ n = int(len(df) * 0.8)
 train_data = df[:n]
 test_data = df[n:]
 
-X_raw = df.iloc[:, :-1].values # (14980, 14)
-y_raw = df.iloc[:, -1].values # (14980)
+X_raw = df.iloc[:, :-1].values
+y_raw = df.iloc[:, -1].values
 
 def create_windows(data, labels, window_size=128, stride=32, macro_block_size=1000):
     X, y, groups = [], [], []
@@ -43,18 +46,12 @@ def create_windows(data, labels, window_size=128, stride=32, macro_block_size=10
         X.append(window_centered)
         label_window = labels[start : start + window_size]
         y.append(np.bincount(label_window.astype(int)).argmax())
-        groups.append(start // macro_block_size) # indices 0-999 are group 0, 1000-1999 are group 1, etc.
+        groups.append(start // macro_block_size)
     return np.array(X), np.array(y), np.array(groups)
-
-# X_win (465, 128, 14)
-# y_win (465, )
 
 def reject_artifacts(X_win, y_win, groups, threshold=150):
     mask = np.max(np.abs(X_win), axis=(1,2)) < threshold
     return X_win[mask], y_win[mask], groups[mask]
-
-# X_win (441, 128, 14)
-# y_win (441, )
 
 def get_batch(split):
     X = X_train if split == 'train' else X_test
@@ -139,14 +136,14 @@ class RoPE(nn.Module):
 
     def __init__(self, d, max_seq_len):
         super().__init__()
-        m = torch.arange(max_seq_len) # (max_seq_len, )
-        theta = 10000 ** -(torch.arange(0,d,2).float() / d) # (1, d/2)
-        angles = torch.outer(m, theta).repeat_interleave(2, dim=-1) # (max_seq_len, d)
+        m = torch.arange(max_seq_len)
+        theta = 10000 ** -(torch.arange(0,d,2).float() / d)
+        angles = torch.outer(m, theta).repeat_interleave(2, dim=-1)
         self.register_buffer('angles', angles)
 
     def forward(self, q):
-        seq_len = q.shape[1] # (seq_len), gets sequence length of query tensor q
-        angles = self.angles[:seq_len] # gets angles up to a specific sequence length
+        seq_len = q.shape[1]
+        angles = self.angles[:seq_len]
         q_swapped = torch.stack([-q[..., 1::2], q[..., ::2]], dim=-1).reshape_as(q)
         final_output = (q * torch.cos(angles)) + (q_swapped * torch.sin(angles))
         return final_output
@@ -164,14 +161,14 @@ class Head(nn.Module):
 
     def forward(self, x):
         B,T,C = x.shape
-        k = self.rope(self.key(x)) # (B,T,C)
-        q = self.rope(self.query(x)) # (B,T,C)
-        wei = q @ k.transpose(-2, -1) * C**-0.5 # (B,T,T)
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B,T,T)
-        wei = F.softmax(wei, dim=-1) # (B,T,T)
-        wei = self.dropout(wei) # (B,T,T)
-        v = self.value(x) # (B,T,C)
-        out = wei @ v # (B,T,C)
+        k = self.rope(self.key(x))
+        q = self.rope(self.query(x))
+        wei = q @ k.transpose(-2, -1) * C**-0.5
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
+        v = self.value(x)
+        out = wei @ v
         return out
 
 class MultiHeadAttention(nn.Module):
@@ -226,19 +223,20 @@ class Model(nn.Module):
         self.lm_head = nn.Linear(n_embd, 2)
 
     def forward(self, idx, targets=None):
-        B,T,C = idx.shape # (B,T,14)
-        tok_emb = self.token_embedding_table(idx) # (B,T,n_embd)
+        B,T,C = idx.shape
+        tok_emb = self.token_embedding_table(idx)
         x = tok_emb
-        x = self.blocks(x) # (B,T,n_embd)
-        x = self.ln_f(x) # (B,T,n_embd)
-        xmean = x.mean(dim=1) # (B,n_embd)
-        logits = self.lm_head(xmean) # (B,2)
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        xmean = x.mean(dim=1)
+        logits = self.lm_head(xmean)
         return logits
 
 model = Model()
 m = model.to(device)
 
 # Stratified Group K-Fold
+
 X_win, y_win, groups = create_windows(X_raw, y_raw)
 X_win, y_win, groups = reject_artifacts(X_win, y_win, groups)
 folds = get_data_folds(X_win, y_win, groups, K=5)
