@@ -34,7 +34,7 @@ An automated Bayesian hyperparameter search using Optuna (Tree-structured Parzen
 
 The optimized architecture is a 2-layer Transformer with 16-dimensional embeddings and 4 attention heads, trained via AdamW (lr ~2.26e-5, weight decay ~0.027). It utilizes RoPE positional encoding, label smoothing (0.1), and early stopping monitored via an Exponential Moving Average (EMA) of the validation loss.
 
-Under this rigorous validation framework, the model achieved a robust mean ROC-AUC of **0.7373 ± 0.1373**, outperforming both the LSTM (0.68) and Random Forest (0.62) baselines. The high fold variance reflects the inherent non-stationarity of the EEG recordings across different temporal segments.
+Under this rigorous validation framework, the model achieved a robust mean ROC-AUC of **0.74 ± 0.137**, outperforming both the LSTM (0.68) and Random Forest (0.62) baselines. The high fold variance reflects the inherent non-stationarity of the EEG recordings across different temporal segments.
 
 
 ## Pipeline
