@@ -38,7 +38,7 @@ By extracting attention weight matrices from the encoder, we visualize how it pr
 - **Heads 0 and 3** track oscillatory temporal rhythms, showing clear diagonal frequency banding across the entire window
 - **Heads 1 and 2** broadcast localized frontal blink artifacts across the entire sequence
 
-
+![Layer 0 Attention Heatmaps](attention_heatmaps.png)
 ![SHAP Summary](shap_summary.png)
 
 ## Pipeline
