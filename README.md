@@ -17,7 +17,7 @@ This project builds an EEG eye-state classification pipeline on the UCI EEG Eye 
 ## Key Findings
 1. Statistical time-domain features outperform spectral features for classical trees.
 2. A custom temporal Transformer analyzing raw, uncompressed voltage windows achieves the best overall performance (**0.70 ROC-AUC**), outperforming LSTM (**0.68**) and Random Forest (**0.62**) baselines.
-3. Attention heatmaps show that individual Transformer heads specialize natively, as some performed Alpha/Beta frequency banding and others globally broadcasted frontal oculomotor blinking spikes.
+3. Attention heatmaps show that individual Transformer heads learned signal dynamics instead of noise, with diagonal bands indicating periodic waves being captured by relative phase lags (j - i = ∆t) and vertical bands indicating attention sinks from voltage gradients or artifact boundaries.
 4. SHAP analysis revealed that classification is driven primarily by oculomotor artifacts at frontal electrodes rather than occipital alpha rhythm suppression, suggesting consumer-grade EEG hardware cannot reliably capture the alpha-blocking phenomenon with sufficient SNR.
 
 ## Transformer and Interpretability Experiments
@@ -35,8 +35,10 @@ The optimized architecture is a 2-layer Transformer with 16-dimensional embeddin
 
 ## SHAP and Diagnostic Attention Heatmaps
 By extracting attention weight matrices from the encoder, we visualize how it processes raw voltage without convolutional pooling:
-- **Heads 0 and 3** track oscillatory temporal rhythms, showing clear diagonal frequency banding across the entire window
-- **Heads 1 and 2** broadcast localized frontal blink artifacts across the entire sequence
+- **Parallel diagonal bands** (notably Heads 0 and 2) track periodic oscillations, meaning the model captured fixed relative phase lags across subsequent queries
+- **Vertical bands** (all heads) highlight specific keys representing sharp voltage gradients or artifact boundaries being generally prominent across queries, illustrating attention sinks
+- **Horizontal bands** (all heads) indicate uniform distribution across a sequence of keys from a query, rather than certain keys being sharply captured
+- **White spaces** (e.g. Head 1 columns 30-50) signal regions of keys that were not particularly important and were suppressed by the model
 
 ![Layer 0 Attention Heatmaps](attention_heatmaps.png)
 ![SHAP Summary](shap_summary.png)
